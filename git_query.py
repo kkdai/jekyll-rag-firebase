@@ -1,6 +1,5 @@
 from github import Github
 import os
-import json
 
 def git_article(github_token, repo_owner, repo_name, directory_path):
     g = Github(github_token)

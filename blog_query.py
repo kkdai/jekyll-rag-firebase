@@ -2,11 +2,9 @@ import os
 import json
 import firebase_admin
 from firebase_admin import credentials, db
-from github import Github
 import numpy as np
 import google.generativeai as genai
 from scipy.spatial.distance import cosine
-from bs4 import BeautifulSoup
 
 # 初始化 Firebase Admin SDK
 firebase_url = os.getenv('FIREBASE_URL')
@@ -34,61 +32,6 @@ def generate_embedding(text):
 
     combined_embedding = np.mean(embeddings, axis=0)
     return combined_embedding
-
-def store_embedding(embedding_data):
-    ref = db.reference('blog_embeddings')
-    ref.child(embedding_data['id']).set(embedding_data)
-    print(f"Embedding data for {embedding_data['id']} stored successfully.")
-
-def check_if_exists(file_id):
-    ref = db.reference('blog_embeddings')
-    return ref.child(file_id).get() is not None
-
-def remove_html_tags(text):
-    soup = BeautifulSoup(text, "html.parser")
-    return soup.get_text()
-
-def git_article(github_token, repo_owner, repo_name, directory_path):
-    g = Github(github_token)
-    repo = g.get_repo(f"{repo_owner}/{repo_name}")
-    contents = repo.get_contents(directory_path)
-    
-    files_data = []
-
-    limit = 0    
-    while contents and limit < 30:
-        limit += 1
-        file_content = contents.pop(0)
-        if file_content.type == "dir":
-            contents.extend(repo.get_contents(file_content.path))
-        else:
-            file_id = file_content.name.split('.')[0]
-            if check_if_exists(file_id):
-                print(f"File {file_id} already exists in the database. Skipping.")
-                continue
-            
-            file_content_decoded = file_content.decoded_content.decode('utf-8')
-            cleaned_content = remove_html_tags(file_content_decoded)
-            embedding = generate_embedding(cleaned_content)
-            
-            embedding_data = {
-                'id': file_id,
-                'vector': embedding.tolist(),  # 将 numpy 数组转换为列表
-                'content': cleaned_content
-            }
-            store_embedding(embedding_data)
-            
-            files_data.append({
-                'file_name': file_id,
-                'content': cleaned_content
-            })
-            print(f"Downloaded and processed {file_id}")
-    
-    result = {
-        'files': files_data,
-        'total_count': len(files_data)
-    }
-    return result
 
 def query_embedding(question, top_k=1):
     # 生成问句的嵌入
@@ -142,28 +85,25 @@ def generate_gemini_text_complete(prompt):
     return response
 
 # 示例调用
-if __name__ == "__main__":
-    GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-    if not GITHUB_TOKEN:
-        raise ValueError("GITHUB_TOKEN environment variable not set")
-    
-    REPO_OWNER = 'kkdai'
-    REPO_NAME = 'kkdai.github.io'
-    DIRECTORY_PATH = '_posts'
-    
-    # result = git_article(GITHUB_TOKEN, REPO_OWNER, REPO_NAME, DIRECTORY_PATH)
-    # if result:
-    #     print(f"Downloaded and processed {result['total_count']} files.")
-    
+if __name__ == "__main__":    
     # 示例查询和生成响应
-    question = "寫部落格有什麼好處？"
+    question = "我哪一天架設 oracle8i 的?"
     response = query_and_generate_response(question, top_k=1)
     for res in response:
         print(f"File ID: {res['file_id']}, Similarity: {res['similarity']}")
         # print(f"Content: {res['content']}")
         content_str = res['content']
         # print(f'content_str: {content_str}')
-        prompt = f"question:{question} \n please only reply in the refer content:{content_str} \n and answer it. Don't reply anything not in content, reply in zh_tw\n"
+        prompt = f"""
+        use the following CONTEXT to answer the QUESTION at the end.
+        If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+        CONTEXT: {content_str}
+        QUESTION: {question}
+
+        reply in zh_tw
+        """
+
         # print(f'prompt: {prompt}')
         completion = generate_gemini_text_complete(prompt)
         print(completion.text)

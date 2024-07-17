@@ -1,0 +1,6 @@
+github
+firebase_admin
+numpy
+google.generativeai
+scipy
+numpy

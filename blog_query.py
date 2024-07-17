@@ -156,19 +156,19 @@ if __name__ == "__main__":
     #     print(f"Downloaded and processed {result['total_count']} files.")
     
     # 示例查询和生成响应
-    question = "如何 openwebmail 邮件服务器配置?"
-    response = query_and_generate_response(question, top_k=3)
+    question = "寫部落格有什麼好處？"
+    response = query_and_generate_response(question, top_k=1)
     for res in response:
         print(f"File ID: {res['file_id']}, Similarity: {res['similarity']}")
         # print(f"Content: {res['content']}")
+        content_str = res['content']
+        # print(f'content_str: {content_str}')
+        prompt = f"question:{question} \n please only reply in the refer content:{content_str} \n and answer it. Don't reply anything not in content, reply in zh_tw\n"
+        # print(f'prompt: {prompt}')
+        completion = generate_gemini_text_complete(prompt)
+        print(completion.text)
+
     
-    # ask generation result using gemini using response 
-    # Ensure response[0]['content'] is converted to a string properly
-    content_str = response[0]['content'] if isinstance(response[0]['content'], str) else str(response[0]['content'])
-    prompt = f"question:{question}\nrefer:{content_str}\nanswer it. reply in zh_tw\n"
-    print(f'prompt: {prompt}')
-    completion = generate_gemini_text_complete(prompt)
-    print(completion.text)
 
 
 

@@ -1,4 +1,3 @@
-```markdown
 # Jekyll Blog with Firebase RAG DB
 
 This repository provides a set of Python scripts to help you use Firebase as a Retrieval-Augmented Generation (RAG) database for embedding and querying your Jekyll (GitHub Pages) blog content.
@@ -21,12 +20,14 @@ This repository provides a set of Python scripts to help you use Firebase as a R
 ### Installation
 
 1. Clone the repository:
+
     ```sh
     git clone https://github.com/kkdai/jekyll-rag-firebase.git
     cd jekyll-rag-firebase
     ```
 
 2. Install required Python packages:
+
     ```sh
     pip install -r requirements.txt
     ```
